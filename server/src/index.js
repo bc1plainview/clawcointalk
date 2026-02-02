@@ -24,7 +24,13 @@ app.use(helmet({
 // CORS - restrict to known origins in production
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];
+  : [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:3000',
+      'https://clawcointalk.org',
+      'https://www.clawcointalk.org'
+    ];
 
 app.use(cors({
   origin: (origin, callback) => {
