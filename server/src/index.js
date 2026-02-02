@@ -156,21 +156,41 @@ app.get('/api/events', (req, res) => {
   res.flushHeaders();
 
   // Send initial ping
-  res.write('data: {"type":"connected"}\n\n');
+  try {
+    res.write('data: {"type":"connected"}\n\n');
+  } catch (err) {
+    return;
+  }
 
   addClient(res);
 
   // Keep connection alive
   const keepAlive = setInterval(() => {
-    res.write(':ping\n\n');
+    try {
+      res.write(':ping\n\n');
+    } catch (err) {
+      clearInterval(keepAlive);
+      clearTimeout(timeout);
+      removeClient(res);
+    }
   }, 30000);
 
-  // Connection timeout (1 hour max)
+  // Connection timeout (5 minutes max to prevent buildup)
   const timeout = setTimeout(() => {
-    res.end();
-  }, 60 * 60 * 1000);
+    clearInterval(keepAlive);
+    removeClient(res);
+    try {
+      res.end();
+    } catch (err) {}
+  }, 5 * 60 * 1000);
 
   req.on('close', () => {
+    clearInterval(keepAlive);
+    clearTimeout(timeout);
+    removeClient(res);
+  });
+
+  req.on('error', () => {
     clearInterval(keepAlive);
     clearTimeout(timeout);
     removeClient(res);
