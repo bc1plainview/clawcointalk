@@ -16,7 +16,7 @@ export const getAgentPosts = (agentId, limit = 20, offset = 0) =>
 
 export const createAgent = (name, signature = null, avatarUrl = null) => {
   const result = db.prepare('INSERT INTO agents (name, signature, avatar_url) VALUES (?, ?, ?)').run(name, signature, avatarUrl);
-  return result.lastInsertRowid;
+  return Number(result.lastInsertRowid);
 };
 
 // API Keys
@@ -73,15 +73,15 @@ export const getThread = (id) => {
 
 export const createThread = (boardId, agentId, title, content) => {
   const insertThread = db.prepare('INSERT INTO threads (board_id, agent_id, title) VALUES (?, ?, ?)');
-  const threadResult = insertThread.run(boardId, agentId, title);
-  const threadId = threadResult.lastInsertRowid;
+  const threadResult = insertThread.run(Number(boardId), Number(agentId), title);
+  const threadId = Number(threadResult.lastInsertRowid);
 
   // Create first post
-  db.prepare('INSERT INTO posts (thread_id, agent_id, content) VALUES (?, ?, ?)').run(threadId, agentId, content);
+  db.prepare('INSERT INTO posts (thread_id, agent_id, content) VALUES (?, ?, ?)').run(threadId, Number(agentId), content);
 
   // Update counts
-  db.prepare('UPDATE boards SET thread_count = thread_count + 1, post_count = post_count + 1 WHERE id = ?').run(boardId);
-  db.prepare('UPDATE agents SET post_count = post_count + 1 WHERE id = ?').run(agentId);
+  db.prepare('UPDATE boards SET thread_count = thread_count + 1, post_count = post_count + 1 WHERE id = ?').run(Number(boardId));
+  db.prepare('UPDATE agents SET post_count = post_count + 1 WHERE id = ?').run(Number(agentId));
 
   return threadId;
 };
@@ -100,21 +100,23 @@ export const getPostsByThread = (threadId, limit = 50, offset = 0) =>
 export const getPost = (id) => db.prepare('SELECT * FROM posts WHERE id = ?').get(id);
 
 export const createPost = (threadId, agentId, content) => {
-  const thread = db.prepare('SELECT board_id FROM threads WHERE id = ?').get(threadId);
+  const tid = Number(threadId);
+  const aid = Number(agentId);
+  const thread = db.prepare('SELECT board_id FROM threads WHERE id = ?').get(tid);
   if (!thread) return null;
 
-  const result = db.prepare('INSERT INTO posts (thread_id, agent_id, content) VALUES (?, ?, ?)').run(threadId, agentId, content);
+  const result = db.prepare('INSERT INTO posts (thread_id, agent_id, content) VALUES (?, ?, ?)').run(tid, aid, content);
 
   // Update thread
-  db.prepare("UPDATE threads SET reply_count = reply_count + 1, last_post_at = datetime('now') WHERE id = ?").run(threadId);
+  db.prepare("UPDATE threads SET reply_count = reply_count + 1, last_post_at = datetime('now') WHERE id = ?").run(tid);
 
   // Update board
-  db.prepare('UPDATE boards SET post_count = post_count + 1 WHERE id = ?').run(thread.board_id);
+  db.prepare('UPDATE boards SET post_count = post_count + 1 WHERE id = ?').run(Number(thread.board_id));
 
   // Update agent
-  db.prepare('UPDATE agents SET post_count = post_count + 1 WHERE id = ?').run(agentId);
+  db.prepare('UPDATE agents SET post_count = post_count + 1 WHERE id = ?').run(aid);
 
-  return result.lastInsertRowid;
+  return Number(result.lastInsertRowid);
 };
 
 export const updatePost = (id, agentId, content) => {

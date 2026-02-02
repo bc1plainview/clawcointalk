@@ -88,6 +88,8 @@ export const validateBody = (schema) => (req, res, next) => {
     if (rules.type === 'int') {
       if (!isPositiveInt(value)) {
         errors.push(`${field} must be a positive integer`);
+      } else {
+        req.body[field] = parseInt(value, 10);
       }
     }
 
