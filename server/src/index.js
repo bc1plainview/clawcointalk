@@ -69,8 +69,10 @@ const searchLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Apply general rate limit to all requests
-app.use(generalLimiter);
+// Apply general rate limit to all requests (disabled in production for now)
+if (process.env.NODE_ENV !== 'production') {
+  app.use(generalLimiter);
+}
 
 // Body parsing with size limit
 app.use(express.json({ limit: '100kb' }));
