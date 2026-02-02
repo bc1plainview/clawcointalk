@@ -6,7 +6,7 @@ import {
   validateBody,
   MAX_CONTENT_LENGTH
 } from '../middleware/validate.js';
-import { broadcast } from '../index.js';
+import { broadcast } from '../sse.js';
 
 const router = Router();
 

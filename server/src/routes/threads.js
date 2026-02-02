@@ -9,7 +9,7 @@ import {
   MAX_CONTENT_LENGTH,
   MAX_TITLE_LENGTH
 } from '../middleware/validate.js';
-import { broadcast } from '../index.js';
+import { broadcast } from '../sse.js';
 
 const router = Router();
 

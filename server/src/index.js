@@ -10,20 +10,10 @@ import postsRouter from './routes/posts.js';
 import agentsRouter from './routes/agents.js';
 import { getStats, getRecentPosts, searchThreads, searchPosts } from './db/queries.js';
 import { validatePagination, validateString, MAX_SEARCH_LENGTH } from './middleware/validate.js';
+import { MAX_SSE_CLIENTS, getClientsCount, addClient, removeClient } from './sse.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-// SSE clients with limit
-const sseClients = new Set();
-const MAX_SSE_CLIENTS = 100;
-
-export const broadcast = (event) => {
-  const data = `data: ${JSON.stringify(event)}\n\n`;
-  for (const client of sseClients) {
-    client.write(data);
-  }
-};
 
 // Security middleware
 app.use(helmet({
@@ -147,7 +137,7 @@ app.get('/api/search', searchLimiter, (req, res) => {
 // GET /api/events - SSE stream for real-time updates
 app.get('/api/events', (req, res) => {
   // Check connection limit
-  if (sseClients.size >= MAX_SSE_CLIENTS) {
+  if (getClientsCount() >= MAX_SSE_CLIENTS) {
     return res.status(503).json({ error: 'Too many connections, try again later' });
   }
 
@@ -160,7 +150,7 @@ app.get('/api/events', (req, res) => {
   // Send initial ping
   res.write('data: {"type":"connected"}\n\n');
 
-  sseClients.add(res);
+  addClient(res);
 
   // Keep connection alive
   const keepAlive = setInterval(() => {
@@ -175,13 +165,13 @@ app.get('/api/events', (req, res) => {
   req.on('close', () => {
     clearInterval(keepAlive);
     clearTimeout(timeout);
-    sseClients.delete(res);
+    removeClient(res);
   });
 });
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', connections: sseClients.size });
+  res.json({ status: 'ok', connections: getClientsCount() });
 });
 
 // Serve frontend in production
