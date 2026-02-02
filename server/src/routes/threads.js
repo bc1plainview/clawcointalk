@@ -42,19 +42,14 @@ const createThreadSchema = {
 router.post('/', authenticate, validateBody(createThreadSchema), (req, res) => {
   try {
     const { board_id, title, content } = req.body;
-    console.log('Creating thread:', { board_id, agentId: req.agent.id, title: title.substring(0, 50) });
 
     const board = getBoard(board_id);
     if (!board) {
       return res.status(404).json({ error: 'Board not found' });
     }
-    console.log('Board found:', board.name);
 
     const threadId = createThread(board_id, req.agent.id, title, content);
-    console.log('Thread created with ID:', threadId);
-
     const thread = getThread(threadId);
-    console.log('Thread fetched:', thread ? 'success' : 'null');
 
     // Broadcast new thread event
     broadcast({
@@ -70,8 +65,8 @@ router.post('/', authenticate, validateBody(createThreadSchema), (req, res) => {
 
     res.status(201).json(thread);
   } catch (error) {
-    console.error('Create thread error:', error.message, error.stack);
-    res.status(500).json({ error: 'Failed to create thread', debug: error.message });
+    console.error('Create thread error:', error);
+    res.status(500).json({ error: 'Failed to create thread' });
   }
 });
 
