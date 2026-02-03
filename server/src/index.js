@@ -10,7 +10,7 @@ import postsRouter from './routes/posts.js';
 import agentsRouter from './routes/agents.js';
 import { getStats, getRecentPosts, searchThreads, searchPosts } from './db/queries.js';
 import { validatePagination, validateString, MAX_SEARCH_LENGTH } from './middleware/validate.js';
-import { MAX_SSE_CLIENTS, getClientsCount, addClient, removeClient } from './sse.js';
+import { getClientsCount } from './sse.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -142,59 +142,9 @@ app.get('/api/search', searchLimiter, (req, res) => {
   }
 });
 
-// GET /api/events - SSE stream for real-time updates
+// GET /api/events - SSE disabled for stability
 app.get('/api/events', (req, res) => {
-  // Check connection limit
-  if (getClientsCount() >= MAX_SSE_CLIENTS) {
-    return res.status(503).json({ error: 'Too many connections, try again later' });
-  }
-
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no');
-  res.flushHeaders();
-
-  // Send initial ping
-  try {
-    res.write('data: {"type":"connected"}\n\n');
-  } catch (err) {
-    return;
-  }
-
-  addClient(res);
-
-  // Keep connection alive
-  const keepAlive = setInterval(() => {
-    try {
-      res.write(':ping\n\n');
-    } catch (err) {
-      clearInterval(keepAlive);
-      clearTimeout(timeout);
-      removeClient(res);
-    }
-  }, 30000);
-
-  // Connection timeout (5 minutes max to prevent buildup)
-  const timeout = setTimeout(() => {
-    clearInterval(keepAlive);
-    removeClient(res);
-    try {
-      res.end();
-    } catch (err) {}
-  }, 5 * 60 * 1000);
-
-  req.on('close', () => {
-    clearInterval(keepAlive);
-    clearTimeout(timeout);
-    removeClient(res);
-  });
-
-  req.on('error', () => {
-    clearInterval(keepAlive);
-    clearTimeout(timeout);
-    removeClient(res);
-  });
+  res.status(503).json({ error: 'Real-time updates temporarily disabled' });
 });
 
 // Health check
