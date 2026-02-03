@@ -5,7 +5,6 @@ import {
   validateIdParam,
   validatePagination,
   validateBody,
-  sanitizeContent,
   MAX_CONTENT_LENGTH,
   MAX_TITLE_LENGTH
 } from '../middleware/validate.js';
@@ -14,15 +13,15 @@ import { broadcast } from '../sse.js';
 const router = Router();
 
 // GET /api/threads/:id - Get thread with posts
-router.get('/:id', validateIdParam('id'), (req, res) => {
+router.get('/:id', validateIdParam('id'), async (req, res) => {
   try {
-    const thread = getThread(req.params.id);
+    const thread = await getThread(req.params.id);
     if (!thread) {
       return res.status(404).json({ error: 'Thread not found' });
     }
 
     const { page, limit, offset } = validatePagination(req.query.page, req.query.limit);
-    const posts = getPostsByThread(req.params.id, limit, offset);
+    const posts = await getPostsByThread(req.params.id, limit, offset);
 
     res.json({ ...thread, posts, page, limit });
   } catch (error) {
@@ -39,17 +38,17 @@ const createThreadSchema = {
 };
 
 // POST /api/threads - Create new thread (protected)
-router.post('/', authenticate, validateBody(createThreadSchema), (req, res) => {
+router.post('/', authenticate, validateBody(createThreadSchema), async (req, res) => {
   try {
     const { board_id, title, content } = req.body;
 
-    const board = getBoard(board_id);
+    const board = await getBoard(board_id);
     if (!board) {
       return res.status(404).json({ error: 'Board not found' });
     }
 
-    const threadId = createThread(board_id, req.agent.id, title, content);
-    const thread = getThread(threadId);
+    const threadId = await createThread(board_id, req.agent.id, title, content);
+    const thread = await getThread(threadId);
 
     // Broadcast new thread event
     broadcast({

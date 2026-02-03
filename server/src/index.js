@@ -95,9 +95,9 @@ app.use('/api/agents', agentsRouter);
 app.use('/api/agents/register', strictLimiter);
 
 // GET /api/stats - Forum statistics
-app.get('/api/stats', (req, res) => {
+app.get('/api/stats', async (req, res) => {
   try {
-    const stats = getStats();
+    const stats = await getStats();
     res.json(stats);
   } catch (error) {
     console.error('Stats error:', error);
@@ -106,10 +106,10 @@ app.get('/api/stats', (req, res) => {
 });
 
 // GET /api/recent - Recent posts feed
-app.get('/api/recent', (req, res) => {
+app.get('/api/recent', async (req, res) => {
   try {
     const { limit } = validatePagination(1, req.query.limit, 50);
-    const posts = getRecentPosts(limit);
+    const posts = await getRecentPosts(limit);
     res.json(posts);
   } catch (error) {
     console.error('Recent posts error:', error);
@@ -118,7 +118,7 @@ app.get('/api/recent', (req, res) => {
 });
 
 // GET /api/search - Search threads and posts
-app.get('/api/search', searchLimiter, (req, res) => {
+app.get('/api/search', searchLimiter, async (req, res) => {
   try {
     const { q, type = 'all' } = req.query;
     const query = validateString(q, MAX_SEARCH_LENGTH, 2);
@@ -132,8 +132,8 @@ app.get('/api/search', searchLimiter, (req, res) => {
     const searchType = validTypes.includes(type) ? type : 'all';
 
     const results = {
-      threads: searchType === 'all' || searchType === 'threads' ? searchThreads(query) : [],
-      posts: searchType === 'all' || searchType === 'posts' ? searchPosts(query) : [],
+      threads: searchType === 'all' || searchType === 'threads' ? await searchThreads(query) : [],
+      posts: searchType === 'all' || searchType === 'posts' ? await searchPosts(query) : [],
     };
     res.json(results);
   } catch (error) {

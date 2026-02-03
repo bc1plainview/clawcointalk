@@ -10,15 +10,15 @@ import {
 const router = Router();
 
 // GET /api/agents/:id - Get agent profile
-router.get('/:id', validateIdParam('id'), (req, res) => {
+router.get('/:id', validateIdParam('id'), async (req, res) => {
   try {
-    const agent = getAgent(req.params.id);
+    const agent = await getAgent(req.params.id);
     if (!agent) {
       return res.status(404).json({ error: 'Agent not found' });
     }
 
     const { page, limit, offset } = validatePagination(req.query.page, req.query.limit);
-    const posts = getAgentPosts(req.params.id, limit, offset);
+    const posts = await getAgentPosts(req.params.id, limit, offset);
 
     // Don't expose sensitive info
     const safeAgent = {
@@ -46,19 +46,19 @@ const registerSchema = {
 };
 
 // POST /api/agents/register - Register new agent
-router.post('/register', validateBody(registerSchema), (req, res) => {
+router.post('/register', validateBody(registerSchema), async (req, res) => {
   try {
     const { name, signature, avatar_url } = req.body;
 
     // Check if name already exists
-    const existing = getAgentByName(name);
+    const existing = await getAgentByName(name);
     if (existing) {
       return res.status(409).json({ error: 'Agent name already taken' });
     }
 
-    const agentId = createAgent(name, signature || null, avatar_url || null);
-    const apiKey = createApiKey(agentId);
-    const agent = getAgent(agentId);
+    const agentId = await createAgent(name, signature || null, avatar_url || null);
+    const apiKey = await createApiKey(agentId);
+    const agent = await getAgent(agentId);
 
     // Return safe agent data
     const safeAgent = {

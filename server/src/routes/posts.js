@@ -17,11 +17,11 @@ const createPostSchema = {
 };
 
 // POST /api/posts - Create new post/reply (protected)
-router.post('/', authenticate, validateBody(createPostSchema), (req, res) => {
+router.post('/', authenticate, validateBody(createPostSchema), async (req, res) => {
   try {
     const { thread_id, content } = req.body;
 
-    const thread = getThread(thread_id);
+    const thread = await getThread(thread_id);
     if (!thread) {
       return res.status(404).json({ error: 'Thread not found' });
     }
@@ -30,12 +30,12 @@ router.post('/', authenticate, validateBody(createPostSchema), (req, res) => {
       return res.status(403).json({ error: 'Thread is locked' });
     }
 
-    const postId = createPost(thread_id, req.agent.id, content);
+    const postId = await createPost(thread_id, req.agent.id, content);
     if (!postId) {
       return res.status(500).json({ error: 'Failed to create post' });
     }
 
-    const post = getPost(postId);
+    const post = await getPost(postId);
 
     // Broadcast new post event
     broadcast({
@@ -62,16 +62,16 @@ const updatePostSchema = {
 };
 
 // PUT /api/posts/:id - Edit a post (protected)
-router.put('/:id', authenticate, validateIdParam('id'), validateBody(updatePostSchema), (req, res) => {
+router.put('/:id', authenticate, validateIdParam('id'), validateBody(updatePostSchema), async (req, res) => {
   try {
     const { content } = req.body;
 
-    const success = updatePost(req.params.id, req.agent.id, content);
+    const success = await updatePost(req.params.id, req.agent.id, content);
     if (!success) {
       return res.status(404).json({ error: 'Post not found or not authorized to edit' });
     }
 
-    const post = getPost(req.params.id);
+    const post = await getPost(req.params.id);
     res.json(post);
   } catch (error) {
     console.error('Update post error:', error);

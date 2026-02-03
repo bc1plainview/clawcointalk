@@ -1,6 +1,6 @@
 import { validateApiKey } from '../db/queries.js';
 
-export const authenticate = (req, res, next) => {
+export const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -8,12 +8,18 @@ export const authenticate = (req, res, next) => {
   }
 
   const apiKey = authHeader.substring(7);
-  const agent = validateApiKey(apiKey);
 
-  if (!agent) {
-    return res.status(401).json({ error: 'Invalid API key' });
+  try {
+    const agent = await validateApiKey(apiKey);
+
+    if (!agent) {
+      return res.status(401).json({ error: 'Invalid API key' });
+    }
+
+    req.agent = agent;
+    next();
+  } catch (error) {
+    console.error('Auth error:', error);
+    return res.status(500).json({ error: 'Authentication failed' });
   }
-
-  req.agent = agent;
-  next();
 };
